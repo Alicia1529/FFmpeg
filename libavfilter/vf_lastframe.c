@@ -162,7 +162,7 @@ static int activate(AVFilterContext *ctx) {
     int64_t pts;
 
     FF_FILTER_FORWARD_STATUS_BACK(outlink, inlink);
-    printf("ff_outlink_frame_wanted? %d\n", ff_outlink_frame_wanted(outlink));
+    printf("ff_outlink_frame_wanted? %d\n\n", ff_outlink_frame_wanted(outlink));
  
     if (!s->eof) {
         ret = ff_inlink_consume_frame(inlink, &frame);
@@ -171,9 +171,10 @@ static int activate(AVFilterContext *ctx) {
         if (ret > 0) {
           printf("\nframe info: pts %d\n", frame->pts);
           s->last_frame = av_frame_clone(frame);
-          return ff_filter_frame(outlink, frame);
+          frame->pts = 0;
+          // return ff_filter_frame(outlink, frame);
           av_frame_free(&frame);
-          return 0;
+          // return 0;
         }
     }
     
@@ -188,7 +189,7 @@ static int activate(AVFilterContext *ctx) {
     }
 
     printf("\n\n-------- in_frame_count_out %d, out_frame_count_out %d \neof: %d, s->pts %d, s->frame_remaining %d\n",
-    outlink->frame_count_out, inlink->frame_count_out,s->eof, s->pts, s->frame_remaining);
+    inlink->frame_count_out, outlink->frame_count_out,s->eof, s->pts, s->frame_remaining);
     // 如果视频流结束了，但是还需要加frame
     if (s->eof) {
         // 如果结尾已经加完了，告诉说结束
@@ -201,7 +202,7 @@ static int activate(AVFilterContext *ctx) {
           frame = av_frame_clone(s->last_frame);
           if (!frame)
               return AVERROR(ENOMEM);
-          frame->pts += s->pts;
+          frame->pts = s->pts;
           s->pts += av_rescale_q(1, av_inv_q(outlink->frame_rate), outlink->time_base);
           if (s->frame_remaining > 0)
               s->frame_remaining--;
@@ -241,7 +242,7 @@ static int config_input(AVFilterLink *inlink)
     AVFilterContext *ctx = inlink->dst;
     LastFrameContext *s = ctx->priv;
 
-    s->frame_remaining = 25;
+    s->frame_remaining = 50;
 
     return 0;
 }
